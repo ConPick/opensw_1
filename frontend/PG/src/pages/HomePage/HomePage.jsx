@@ -27,5 +27,9 @@ export default function HomePage() {
         </main>
       </div>
     </div>
+
+export default function HomePage() {
+  return (
+    <div>HomePage</div>
   )
 }

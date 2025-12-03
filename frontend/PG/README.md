@@ -95,7 +95,7 @@ src/
 │ │
 │ └─ MainPage/
 │ ├─ MainPage.jsx
-│ ├─ 3dMap.jsx
+│ ├─ Map3D.jsx
 │ ├─ GoToHome.jsx
 │ │
 │ └─ Details/
