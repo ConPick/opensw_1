@@ -17,8 +17,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex justify-center items-center bg-gray-950">
-      <div className="relative w-full max-w-4xl aspect-video rounded-3xl border-2 border-white border-opacity-70 bg-cover bg-center overflow-hidden"
-           style={{ backgroundImage: 'url("/main.jpg")' }}>
+      <div className="relative w-screen h-screen rounded-none bg-cover bg-center overflow-hidden"
+     style={{ backgroundImage: 'url("/main.jpg")' }}>
+
         
         {/* 상단 설정 버튼 */}
         <header className="absolute top-3 right-3 flex gap-2 z-30">
@@ -44,10 +45,10 @@ export default function HomePage() {
         )}
 
         {/* 마커들 */}
-        <Marker type="green" top="30%" left="45%" label="일송 주차장" />
-        <Marker type="green" top="33%" left="60%" label="공대 주차장" />
-        <Marker type="red" top="45%" left="20%" label="도헌 주차장" />
-        <Marker type="red" top="48%" left="85%" label="CLC 주차장" />
+        <Marker type="green" top="40%" left="45%" label="공대 주차장" />
+        <Marker type="green" top="40%" left="60%" label="일송 주차장" />
+        <Marker type="red" top="60%" left="25%" label="도헌 주차장" />
+        <Marker type="red" top="55%" left="90%" label="CLC 주차장" />
 
         {/* 콘텐츠 영역 */}
         <main className="absolute inset-0 flex items-end p-10">
