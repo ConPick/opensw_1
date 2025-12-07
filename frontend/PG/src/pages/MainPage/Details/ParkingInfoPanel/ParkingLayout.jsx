@@ -8,7 +8,7 @@ import ZoneLegend from "./ZoneLegend";
 import FeeCalculator from "./FeeCalculator";
 
 function ParkingLayout() {
-    const [activeTab, setActiveTab] = useState("전체");
+  const [activeTab, setActiveTab] = useState("전체");
 
   const congestionData = {
     "8시": 60,
