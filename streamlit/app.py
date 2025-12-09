@@ -63,7 +63,7 @@ with col2:
 with col3:
     st.metric(label="회차 차량 비율 (30분↓)", value=f"{kpi_data['short_term_ratio']}%", help="30분 이내 출차하는 차량의 비율")
 with col4:
-    st.metric(label="최대 혼잡 시간 (Peak)", value=f"{kpi_data['peak_hour']}시", help="하루 중 입차량이 가장 많은 시간대")
+    st.metric(label="최대 입차량 시간 (Peak)", value=f"{kpi_data['peak_hour']}시", help="하루 중 입차량이 가장 많은 시간대")
 
 st.divider()
 
