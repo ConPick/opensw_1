@@ -6,6 +6,7 @@ import SummaryCards from "./SummaryCards";
 import CongestionBars from "./CongestionBars";
 import ZoneLegend from "./ZoneLegend";
 import FeeCalculator from "./FeeCalculator";
+import UnityViewer from "./UnityViewer";
 
 function ParkingLayout() {
   const [activeTab, setActiveTab] = useState("전체");
@@ -59,7 +60,7 @@ function ParkingLayout() {
     <div className="flex h-[80vh] bg-slate-100 rounded-2xl shadow-lg overflow-hidden divide-x divide-gray-200">
       {/* 왼쪽 3D 뷰 영역 (70%) */}
       <section className="flex-1 basis-[70%]">
-        <ThreeDView />
+        <UnityViewer />
       </section>
 
       {/* 오른쪽 정보 패널 영역 (30%) */}
