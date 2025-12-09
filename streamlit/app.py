@@ -117,7 +117,7 @@ with row2_1:
                       title="게이트별 차량 유입 비중")
     fig_gate.update_traces(textposition='inside', textinfo='percent+label')
     st.plotly_chart(fig_gate, use_container_width=True)
-    st.info("💡 **정문(우/좌)**으로 전체 차량의 70%가 진입합니다. 동문/서문의 활용도가 낮습니다.")
+    st.info("💡 정문(우/좌)으로 전체 차량의 70%가 진입합니다. 동문/서문의 활용도가 낮습니다.")
 
 # Insights Text
 # 기존 코드의 with row2_2: 부분을 아래 코드로 교체하세요.
@@ -156,7 +156,7 @@ with row2_2:
     with c6:
         with st.container(border=True):
             st.markdown("### 🏖️ 여유로운 주말")
-            st.markdown("주말 유입은 평일의 **1/3 수준(약 1,000대)**입니다. 주말 행사나 시설 대관 시 주차 공간은 매우 넉넉합니다.")
+            st.markdown("주말 유입은 평일의 1/3 수준(약 1,000대)입니다. 주말 행사나 시설 대관 시 주차 공간은 매우 넉넉합니다.")
 
 # Footer
 st.markdown("---")
