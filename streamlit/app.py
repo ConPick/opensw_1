@@ -168,8 +168,9 @@ st.markdown("---")
 #  - 로컬: localhost:11434 사용
 #  - Cloud: st.secrets["OLLAMA_BASE_URL"] (ngrok URL) 사용
 # ------------------------------------------------------------------
+use_llm = True  # 필요하면 여기서 LLM 전체를 꺼버릴 수도 있음
+
 try:
-    # Streamlit Cloud 에서 OLLAMA_BASE_URL 이 secrets 에 설정되어 있다면 이걸 사용
     OLLAMA_BASE_URL = st.secrets["OLLAMA_BASE_URL"]
     chat_llm = ChatOllama(
         base_url=OLLAMA_BASE_URL,
@@ -177,12 +178,20 @@ try:
     )
     llm_mode = "remote"
 except Exception:
-    # secrets 가 없으면 로컬에서 localhost:11434 로 접속
-    chat_llm = ChatOllama(
-        model="llama3.1",  # 기본값: http://localhost:11434
-    )
-    llm_mode = "local"
-st.caption(f"🤖 LLM 연결 모드: { '원격(Ollama 서버)' if llm_mode == 'remote' else '로컬(내 PC Ollama)' }")
+    # secrets 없으면 로컬 모드로 시도
+    try:
+        chat_llm = ChatOllama(model="llama3.1")  # localhost:11434
+        llm_mode = "local"
+    except Exception:
+        chat_llm = None
+        llm_mode = "unavailable"
+        use_llm = False  # 아예 비활성화
+
+# 어디선가 모드 표시 (선택)
+st.caption(
+    f"🤖 LLM 연결 모드: "
+    f"{'원격(Ollama 서버)' if llm_mode == 'remote' else '로컬(내 PC Ollama)' if llm_mode == 'local' else '사용 불가'}"
+)
 
 chat_prompt = ChatPromptTemplate.from_template("""
 너는 한림대학교 주차 데이터 분석을 도와주는 어시스턴트야.
@@ -212,7 +221,8 @@ chat_prompt = ChatPromptTemplate.from_template("""
 # 3. LLM 기반 Q&A 챗봇 섹션
 # ------------------------------------------------------------------
 st.header("💬 주차 데이터 Q&A 챗봇 (로컬 LLM)")
-
+if not use_llm:
+    st.warning("현재 LLM 서버에 연결할 수 없어, 챗봇 기능이 비활성화된 상태입니다.")
 # 요약 텍스트 만들기
 df_week = pd.DataFrame(weekday_avg_data)
 weekday_summary = "\n".join(
