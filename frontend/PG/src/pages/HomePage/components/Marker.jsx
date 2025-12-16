@@ -1,6 +1,7 @@
 // src/components/Marker.jsx (경로는 프로젝트 구조에 맞게)
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { Car } from "lucide-react";
 
 export default function Marker({ type = "green", top, left, label, onClick }) {
   const navigate = useNavigate();
@@ -45,7 +46,9 @@ export default function Marker({ type = "green", top, left, label, onClick }) {
       }}
       onClick={handleClick}
     >
-      <span className="text-lg">🚗</span>
+      <span className="text-lg">
+        <Car className="w-5 h-5 text-slate-50" />
+      </span>
     </button>
   );
 }

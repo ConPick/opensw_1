@@ -1,5 +1,8 @@
 // src/pages/MainPage/Details/ParkingInfoPanel/SummaryCards.jsx
 import React from "react";
+import { ParkingSquare } from "lucide-react";
+import { BarChart3 } from "lucide-react";
+import { Car } from "lucide-react";
 
 function SummaryCards({ totalSpaces, availablePrediction, saturation }) {
   return (
@@ -15,7 +18,7 @@ function SummaryCards({ totalSpaces, availablePrediction, saturation }) {
       >
         <div className="flex items-center space-x-3">
           <div className="w-9 h-9 rounded-xl bg-indigo-500/30 flex items-center justify-center text-xl text-slate-50">
-            🚗
+            <Car className="w-5 h-5 text-slate-50" />
           </div>
           <div>
             <p className="text-xs text-slate-300">총 주차 대수</p>
@@ -47,7 +50,7 @@ function SummaryCards({ totalSpaces, availablePrediction, saturation }) {
       >
         <div className="flex items-center space-x-3">
           <div className="w-9 h-9 rounded-xl bg-emerald-500/30 flex items-center justify-center text-xl text-slate-50">
-            🅿️
+            <ParkingSquare className="w-5 h-5 text-emerald-300" />
           </div>
           <div>
             <p className="text-xs text-slate-300">주차 가능 예측</p>
@@ -80,7 +83,7 @@ function SummaryCards({ totalSpaces, availablePrediction, saturation }) {
         >
           <div className="flex items-center space-x-3">
             <div className="w-9 h-9 rounded-xl bg-rose-500/35 flex items-center justify-center text-xl text-slate-50">
-              📊
+              <BarChart3 className="w-5 h-5 text-rose-400" />
             </div>
             <div>
               <p className="text-xs text-slate-300">포화도</p>

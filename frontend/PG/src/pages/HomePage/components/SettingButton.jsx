@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Settings } from "lucide-react";
 
 export default function SettingButton() {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ export default function SettingButton() {
         onClick={handleClick}
         className="w-11 h-11 rounded-full border-none bg-black bg-opacity-45 text-white text-xl cursor-pointer hover:bg-opacity-60 transition hover:scale-110"
       >
-        ⚙️
+        <Settings className="w-5 h-5 text-slate-200" />
       </button>
 
       {/* 확장 애니메이션 오버레이 */}
