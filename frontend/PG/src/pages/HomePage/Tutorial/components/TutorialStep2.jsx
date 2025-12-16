@@ -1,100 +1,90 @@
-export default function TutorialStep2() {
+// src/pages/HomePage/Tutorial/components/TutorialStep2.jsx
+import React, { useState, useMemo } from "react";
+
+import InfoTabs from "../../../MainPage/Details/ParkingInfoPanel/InfoTabs";
+import SummaryCards from "../../../MainPage/Details/ParkingInfoPanel/SummaryCards";
+import CongestionBars from "../../../MainPage/Details/ParkingInfoPanel/CongestionBars";
+import FeeCalculator from "../../../MainPage/Details/ParkingInfoPanel/FeeCalculator";
+
+
+function TutorialStep2() {
+  const [activeTab, setActiveTab] = useState("전체");
+
+  const congestionData = { "8시": 60, "9시": 95, "13시": 75 };
+
+  const summaryData = useMemo(() => {
+    const totalSpaces = 240;
+    const baseSaturation = 82;
+
+    let currentSaturation = baseSaturation;
+    if (activeTab === "8시") currentSaturation = 65;
+    else if (activeTab === "9시") currentSaturation = 96;
+    else if (activeTab === "13시") currentSaturation = 78;
+
+    const availablePrediction = Math.max(
+      0,
+      Math.round((100 - currentSaturation) * (totalSpaces / 100))
+    );
+
+    return { totalSpaces, availablePrediction, saturation: currentSaturation };
+  }, [activeTab]);
+
+  const congestionArray = [
+    { label: "8시", value: congestionData["8시"], color: "bg-emerald-400" },
+    { label: "9시", value: congestionData["9시"], color: "bg-rose-500" },
+    { label: "13시", value: congestionData["13시"], color: "bg-amber-400" },
+  ];
+
   return (
-    <div className="grid grid-cols-2 gap-12 items-center">
-      {/* 좌측: 정보 패널 미니 와이어프레임 */}
-      <div className="flex flex-col items-center">
-        <div className="w-full bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border-2 border-blue-400 border-opacity-50 p-6 backdrop-blur-md">
-          {/* 패널 헤더 */}
-          <div className="flex gap-2 mb-4">
-            {['전체', '8시', '9시', '13시'].map((tab, idx) => (
-              <button
-                key={idx}
-                className={`px-3 py-1 text-xs rounded transition ${
-                  idx === 0
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-8">
+      {/* 왼쪽: 실제 주차장 정보 패널 (스크롤 가능) */}
+      <div
+        className="
+          max-h-[70vh] overflow-y-auto
+          rounded-3xl border border-white/15
+          bg-white/10 backdrop-blur-2xl
+          shadow-[0_30px_80px_rgba(0,0,0,0.7)]
+          p-4 flex flex-col space-y-4
+        "
+      >
+        <InfoTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {/* 혼잡도 그래프 */}
-          <div className="mb-4 p-3 bg-gray-700 bg-opacity-30 rounded">
-            <p className="text-xs text-gray-400 mb-2">혼잡도</p>
-            <div className="flex gap-1 h-6">
-              <div className="flex-1 bg-green-500 rounded opacity-80"></div>
-              <div className="flex-1 bg-green-500 rounded opacity-80"></div>
-              <div className="flex-1 bg-yellow-500 rounded opacity-80"></div>
-              <div className="flex-1 bg-red-500 rounded opacity-80"></div>
-            </div>
-          </div>
+        <SummaryCards
+          totalSpaces={summaryData.totalSpaces}
+          availablePrediction={summaryData.availablePrediction}
+          saturation={summaryData.saturation}
+        />
 
-          {/* 주차 정보 카드 */}
-          <div className="grid grid-cols-2 gap-2 text-xs mb-3">
-            <div className="bg-blue-900 bg-opacity-30 p-2 rounded">
-              <p className="text-gray-400">가능</p>
-              <p className="text-white font-bold">24/50</p>
-            </div>
-            <div className="bg-red-900 bg-opacity-30 p-2 rounded">
-              <p className="text-gray-400">포화도</p>
-              <p className="text-white font-bold">52%</p>
-            </div>
-          </div>
-
-          {/* 태그 영역 */}
-          <div className="flex gap-2 text-xs mb-3">
-            <span className="bg-red-600 bg-opacity-50 text-red-200 px-2 py-1 rounded">금지</span>
-            <span className="bg-purple-600 bg-opacity-50 text-purple-200 px-2 py-1 rounded">전용</span>
-          </div>
-
-          {/* 요금 계산기 */}
-          <button className="w-full py-2 bg-gradient-to-r from-blue-600 to-blue-500 rounded text-xs font-bold hover:from-blue-500 hover:to-blue-400 transition">
-            💰 요금 계산기
-          </button>
-        </div>
-
-        <div className="mt-4 text-center">
-          <p className="text-sm text-gray-400">
-            Soft Glass UI 스타일의
-            <br />
-            정보 패널
-          </p>
+        <div className="flex flex-col space-y-4">
+          <CongestionBars data={congestionArray} activeTab={activeTab} />
+          <FeeCalculator />
         </div>
       </div>
 
-      {/* 우측: 설명 */}
-      <div className="space-y-6">
-        <div className="bg-gradient-to-r from-blue-900 to-blue-800 bg-opacity-20 border-l-4 border-blue-400 p-6 rounded-lg">
-          <h3 className="text-2xl font-bold mb-4 text-blue-300">📊 주차장 정보 패널 사용법</h3>
-          <ul className="space-y-4">
-            <li className="flex gap-3">
-              <span className="text-blue-400 font-bold">1.</span>
-              <span>시간대 탭을 선택하면 혼잡도와 예상 가능 공간이 바뀝니다.</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-blue-400 font-bold">2.</span>
-              <span>색상 막대(초록/주황/빨강)를 통해 혼잡도 수준을 바로 확인할 수 있습니다.</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-blue-400 font-bold">3.</span>
-              <span>주차금지/전용구역 태그를 참고해 안전하게 주차 위치를 파악하세요.</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-blue-400 font-bold">4.</span>
-              <span>필요하다면 '요금 계산기'에서 예상 요금을 미리 확인할 수 있습니다.</span>
-            </li>
-          </ul>
-        </div>
-
-        {/* 팁 박스 */}
-        <div className="bg-green-900 bg-opacity-20 border-l-4 border-green-400 p-4 rounded-lg">
-          <p className="text-sm text-green-200">
-            ✅ 시간대별 정보로 최적의 주차 시간을 찾아보세요!
-          </p>
-        </div>
-      </div>
+      {/* 오른쪽: 설명 패널 */}
+      <aside
+        className="
+          rounded-3xl border border-white/15
+          bg-white/8 backdrop-blur-xl
+          shadow-[0_20px_60px_rgba(0,0,0,0.65)]
+          p-6 space-y-4
+        "
+      >
+        <h2 className="text-xl font-semibold text-slate-50">
+          주차장 정보 패널 사용법
+        </h2>
+        <p className="text-sm text-slate-200">
+          왼쪽 패널은 메인 화면과 동일한 구성입니다. 시간대를 선택하면 위쪽 카드와
+          혼잡도 그래프가 함께 업데이트됩니다.
+        </p>
+        <ul className="space-y-2 text-sm text-slate-300">
+          <li>• 상단 탭에서 전체/8시/9시/13시 시간대를 선택합니다.</li>
+          <li>• 카드에서 총 주차 대수, 가능 대수, 포화도를 확인할 수 있습니다.</li>
+          <li>• 아래 요금 계산기에서 예상 주차 요금을 미리 계산해 볼 수 있습니다.</li>
+        </ul>
+      </aside>
     </div>
   );
 }
+
+export default TutorialStep2;

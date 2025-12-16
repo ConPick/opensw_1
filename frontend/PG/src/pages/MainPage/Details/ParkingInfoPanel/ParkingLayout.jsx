@@ -1,94 +1,281 @@
 // src/pages/MainPage/Details/ParkingInfoPanel/ParkingLayout.jsx
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import InfoTabs from "./InfoTabs";
 import SummaryCards from "./SummaryCards";
 import CongestionBars from "./CongestionBars";
-import ZoneLegend from "./ZoneLegend";
 import FeeCalculator from "./FeeCalculator";
 import UnityViewer from "./UnityViewer";
 
+const API_BASE = "http://210.115.227.111:8000";
+
+// Unity 씬 이름 (Unity 쪽과 정확히 일치)
+const BUILDING_SCENES = {
+  eng: "GongHak",  // 공학관 씬
+  ilsong: "IlSong" // 일송관 씬
+};
+
 function ParkingLayout({ sceneName }) {
   const [activeTab, setActiveTab] = useState("전체");
-  const unityRef = useRef();
+  const [hours, setHours] = useState([8, 9, 13]);
+  const [buildingData, setBuildingData] = useState(null);
+  const [totalActive, setTotalActive] = useState(null);
 
+  // sceneName(GongHak / IlSong / 기타 대소문자) 에 따라 기본 선택 건물 매핑
+  const [selectedBuilding, setSelectedBuilding] = useState(() => {
+    const s = (sceneName || "").toLowerCase();
+    if (s === "gonghak") return "eng";
+    if (s === "ilsong") return "ilsong";
+    return "eng"; // 기본 공학관
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const unityRef = useRef(null);
+  const initialSceneRef = useRef(null);
+  const hasInitialSent = useRef(false);
+
+  // 🔹 sceneName 변경 시 토글 상태도 동기화
   useEffect(() => {
-    if (sceneName && unityRef.current) {
-      const timer = setTimeout(() => {
-        unityRef.current.loadScene(sceneName);
-      }, 800);
-      return () => clearTimeout(timer);
+    const s = (sceneName || "").toLowerCase();
+    if (s === "gonghak") {
+      setSelectedBuilding("eng");
+    } else if (s === "ilsong") {
+      setSelectedBuilding("ilsong");
     }
   }, [sceneName]);
 
-  const congestionData = {
-    "8시": 60,
-    "9시": 95,
-    "13시": 75,
+  // 1️⃣ 초기로 보낼 씬 이름만 기억
+  useEffect(() => {
+    const s = (sceneName || "").toLowerCase();
+    if (s === "gonghak") {
+      initialSceneRef.current = "GongHak";
+    } else if (s === "ilsong") {
+      initialSceneRef.current = "IlSong";
+    } else {
+      initialSceneRef.current = BUILDING_SCENES.eng;
+    }
+    console.log("[Unity] 초기 로드 예약:", initialSceneRef.current);
+  }, [sceneName]);
+
+  // 2️⃣ Unity 로드 완료 시 한 번만 loadScene 호출
+  const handleUnityReady = () => {
+    if (hasInitialSent.current) return;
+    const initialScene = initialSceneRef.current || BUILDING_SCENES.eng;
+    if (!initialScene || !unityRef.current) return;
+
+    console.log("[Unity] onUnityReady → 초기 로드 실행:", initialScene);
+    unityRef.current.loadScene(initialScene);
+    hasInitialSent.current = true;
   };
 
-  const summaryData = useMemo(() => {
-    const totalSpaces = 240;
-    const baseSaturation = 82;
+  // ✅ 주차 API 호출
+  useEffect(() => {
+    async function fetchKeyHours() {
+      try {
+        setLoading(true);
+        setError(null);
 
-    let currentSaturation = baseSaturation;
-    if (activeTab === "8시") currentSaturation = 65;
-    else if (activeTab === "9시") currentSaturation = 96;
-    else if (activeTab === "13시") currentSaturation = 78;
+        const url = `${API_BASE}/api/parking/buildings/key-hours`;
+        console.log("[API] FETCH URL:", url);
+        const res = await fetch(url);
+
+        if (!res.ok) {
+          throw new Error(
+            `주차 데이터 로드 실패 (status ${res.status})`
+          );
+        }
+
+        const data = await res.json();
+
+        setHours(data.hours);
+        setTotalActive(data.total_active);
+        setBuildingData(data.buildings);
+      } catch (e) {
+        console.error(e);
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchKeyHours();
+  }, []);
+
+  // ✅ 건물 토글 → Unity 씬도 변경
+  const handleSelectBuilding = (id) => {
+    setSelectedBuilding(id);
+
+    const scene = BUILDING_SCENES[id];
+    if (scene && unityRef.current) {
+      console.log("[Unity] 건물 변경, 씬 로드:", id, scene);
+      unityRef.current.loadScene(scene);
+    } else {
+      console.warn(
+        "[Unity] 씬 이름 없음 또는 ref 없음:",
+        id,
+        scene,
+        unityRef.current
+      );
+    }
+  };
+
+  // 현재 선택된 시간 (숫자)
+  const activeHour = useMemo(
+    () =>
+      activeTab === "전체"
+        ? null
+        : Number(activeTab.replace("시", "")),
+    [activeTab]
+  );
+
+  // SummaryCards용 데이터
+  const summaryData = useMemo(() => {
+    if (!buildingData || !totalActive || hours.length === 0)
+      return null;
+
+    const hourKey = activeHour ?? hours[0];
+    const building = buildingData[selectedBuilding];
+    if (!building) return null;
+
+    const metric = building.metrics[String(hourKey)];
+
+    const totalSpaces = building.capacity;
+    const currentCongestion =
+      metric.congestion_percent;
 
     const availablePrediction = Math.max(
       0,
-      Math.round((100 - currentSaturation) * (totalSpaces / 100))
+      Math.round(
+        (100 - currentCongestion) *
+          (totalSpaces / 100)
+      )
     );
+
+    // 🔹 전체 탭이면 포화도는 숨기기 위해 null 로 전달
+    const saturation =
+      activeTab === "전체"
+        ? null
+        : Math.round(metric.saturation_percent);
 
     return {
       totalSpaces,
       availablePrediction,
-      saturation: currentSaturation,
+      saturation,
     };
-  }, [activeTab]);
+  }, [
+    buildingData,
+    totalActive,
+    activeHour,
+    hours,
+    selectedBuilding,
+    activeTab,
+  ]);
 
-  const congestionArray = [
-    { label: "8시", value: congestionData["8시"], color: "bg-emerald-400" },
-    { label: "9시", value: congestionData["9시"], color: "bg-rose-500" },
-    { label: "13시", value: congestionData["13시"], color: "bg-amber-400" },
-  ];
+  // 혼잡도 바 데이터
+  const congestionArray = useMemo(() => {
+    if (!buildingData || hours.length === 0) return [];
+    const building = buildingData[selectedBuilding];
+    if (!building) return [];
+
+    return hours.map((h) => {
+      const metric = building.metrics[String(h)];
+      const value = Math.round(
+        metric.congestion_percent
+      );
+
+      let color = "bg-emerald-400";
+      if (h === 9) color = "bg-rose-500";
+      else if (h === 13) color = "bg-amber-400";
+
+      return {
+        label: `${h}시`,
+        value,
+        color,
+      };
+    });
+  }, [buildingData, hours, selectedBuilding]);
+
+  // 로딩/에러
+  if (loading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-slate-950 text-slate-100">
+        주차 데이터 불러오는 중...
+      </div>
+    );
+  }
+
+  if (error || !buildingData) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-slate-950 text-rose-300">
+        API 오류: {error || "데이터 없음"}
+      </div>
+    );
+  }
 
   return (
-    <div
-      className="
-        flex h-[80vh] w-full
-        rounded-3xl overflow-hidden
-        bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900
-        shadow-[0_30px_80px_rgba(0,0,0,0.7)]
-      "
-    >
+    <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 shadow-[0_30px_80px_rgba(0,0,0,0.7)]">
       {/* Unity 3D 영역 */}
       <section className="flex-1 basis-[70%]">
-        <UnityViewer ref={unityRef} />
+        <UnityViewer ref={unityRef} onUnityReady={handleUnityReady} />
       </section>
 
-      {/* 정보 패널 영역 (글라스모피즘) */}
-      <section
-        className="
-          basis-[30%] max-w-md
-          p-4 flex flex-col space-y-4
-          bg-white/10 backdrop-blur-2xl
-          border-l border-white/15
-          shadow-[0_0_40px_rgba(0,0,0,0.65)]
-        "
-      >
-        <InfoTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      {/* 정보 패널 영역 */}
+      <section className="basis-[30%] max-w-md p-4 flex flex-col space-y-4 bg-white/10 backdrop-blur-2xl border-l border-white/15 shadow-[0_0_40px_rgba(0,0,0,0.65)]">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs text-slate-300">
+            건물 선택
+          </span>
+          <div className="inline-flex rounded-full bg-white/10 p-1 space-x-1">
+            {[
+              { id: "eng", label: "공학관" },
+              { id: "ilsong", label: "일송관" },
+            ].map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() =>
+                  handleSelectBuilding(b.id)
+                }
+                className={
+                  selectedBuilding === b.id
+                    ? "px-3 py-1 text-xs rounded-full bg-white text-slate-900"
+                    : "px-3 py-1 text-xs rounded-full bg-transparent text-slate-200 hover:bg-white/10"
+                }
+              >
+                {b.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-        <SummaryCards
-          totalSpaces={summaryData.totalSpaces}
-          availablePrediction={summaryData.availablePrediction}
-          saturation={summaryData.saturation}
+        <InfoTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          hours={hours}
         />
 
+        {summaryData && (
+          <SummaryCards
+            totalSpaces={summaryData.totalSpaces}
+            availablePrediction={
+              summaryData.availablePrediction
+            }
+            saturation={summaryData.saturation}
+          />
+        )}
+
         <div className="flex-1 flex flex-col space-y-4 overflow-y-auto pb-2">
-          <CongestionBars data={congestionArray} activeTab={activeTab} />
-          <ZoneLegend />
-          <FeeCalculator ratePerMinute={80} />
+          <CongestionBars
+            data={congestionArray}
+            activeTab={activeTab}
+          />
+          <FeeCalculator />
         </div>
       </section>
     </div>
@@ -96,181 +283,3 @@ function ParkingLayout({ sceneName }) {
 }
 
 export default ParkingLayout;
-
-
-// import React, { useState, useMemo, useRef, useEffect } from "react";
-// import InfoTabs from "./InfoTabs";
-// import SummaryCards from "./SummaryCards";
-// import CongestionBars from "./CongestionBars";
-// import ZoneLegend from "./ZoneLegend";
-// import FeeCalculator from "./FeeCalculator";
-// import UnityViewer from "./UnityViewer";
-
-// function ParkingLayout({ sceneName }) {
-//   const [activeTab, setActiveTab] = useState("전체");
-
-//   const unityRef = useRef(); // UnityViewer 제어용 ref
-
-//   useEffect(() => {
-//     if (sceneName && unityRef.current) {
-//       setTimeout(() => {
-//         unityRef.current.loadScene(sceneName);
-//       }, 800);
-//     }
-//   }, [sceneName]);
-
-//   const congestionData = {
-//     "8시": 60,
-//     "9시": 95,
-//     "13시": 75,
-//   };
-
-//   const summaryData = useMemo(() => {
-//     const totalSpaces = 240;
-//     const baseSaturation = 82;
-
-//     let currentSaturation = baseSaturation;
-//     if (activeTab === "8시") currentSaturation = 65;
-//     else if (activeTab === "9시") currentSaturation = 96;
-//     else if (activeTab === "13시") currentSaturation = 78;
-
-//     const availablePrediction = Math.max(
-//       0,
-//       Math.round((100 - currentSaturation) * (totalSpaces / 100))
-//     );
-
-//     return {
-//       totalSpaces,
-//       availablePrediction,
-//       saturation: currentSaturation,
-//     };
-//   }, [activeTab]);
-
-//   const congestionArray = [
-//     { label: "8시", value: congestionData["8시"], color: "bg-emerald-500" },
-//     { label: "9시", value: congestionData["9시"], color: "bg-red-500" },
-//     { label: "13시", value: congestionData["13시"], color: "bg-orange-400" },
-//   ];
-
-//   return (
-//     // <div className="flex h-[80vh] bg-slate-100 rounded-2xl shadow-lg overflow-hidden divide-x divide-gray-200">
-//     <div className="flex h-full w-full bg-slate-100 rounded-none shadow-lg overflow-hidden">
-//       {/* Unity 3D 영역 */}
-//       <section className="flex-1 basis-[70%]">
-//         {/* ⭐ ref 전달로 UnityViewer 제어 가능 */}
-//         <UnityViewer ref={unityRef} />
-//       </section>
-
-//       {/* 정보 패널 영역 */}
-//       <section
-//         className="basis-[30%] max-w-md p-4 flex flex-col space-y-4"
-//         style={{ backgroundColor: "#696460" }}
-//       >
-//         <InfoTabs activeTab={activeTab} onTabChange={setActiveTab} />
-
-//         <SummaryCards
-//           totalSpaces={summaryData.totalSpaces}
-//           availablePrediction={summaryData.availablePrediction}
-//           saturation={summaryData.saturation}
-//         />
-
-//         <div className="flex-1 flex flex-col space-y-4 overflow-y-auto pb-2">
-//           <CongestionBars data={congestionArray} activeTab={activeTab} />
-//           {/* <ZoneLegend /> */}
-//           <FeeCalculator ratePerMinute={80} />
-//         </div>
-//       </section>
-//     </div>
-//   );
-// }
-
-// export default ParkingLayout;
-
-
-
-// // src/pages/MainPage/Details/ParkingInfoPanel/ParkingLayout.jsx
-// import React, { useState, useMemo } from "react";
-// import ThreeDView from "./ThreeDView";
-// import InfoTabs from "./InfoTabs";
-// import SummaryCards from "./SummaryCards";
-// import CongestionBars from "./CongestionBars";
-// import ZoneLegend from "./ZoneLegend";
-// import FeeCalculator from "./FeeCalculator";
-// import UnityViewer from "./UnityViewer";
-
-// function ParkingLayout() {
-//   const [activeTab, setActiveTab] = useState("전체");
-
-//   const congestionData = {
-//     "8시": 60,
-//     "9시": 95,
-//     "13시": 75,
-//   };
-
-//   const summaryData = useMemo(() => {
-//     const totalSpaces = 240;
-//     const baseSaturation = 82;
-
-//     let currentSaturation = baseSaturation;
-//     if (activeTab === "8시") currentSaturation = 65;
-//     else if (activeTab === "9시") currentSaturation = 96;
-//     else if (activeTab === "13시") currentSaturation = 78;
-
-//     const availablePrediction = Math.max(
-//       0,
-//       Math.round((100 - currentSaturation) * (totalSpaces / 100))
-//     );
-
-//     return {
-//       totalSpaces,
-//       availablePrediction,
-//       saturation: currentSaturation,
-//     };
-//   }, [activeTab]);
-
-//   const congestionArray = [
-//     {
-//       label: "8시",
-//       value: congestionData["8시"],
-//       color: "bg-emerald-500",
-//     },
-//     {
-//       label: "9시",
-//       value: congestionData["9시"],
-//       color: "bg-red-500",
-//     },
-//     {
-//       label: "13시",
-//       value: congestionData["13시"],
-//       color: "bg-orange-400",
-//     },
-//   ];
-
-//   return (
-//     <div className="flex h-[80vh] bg-slate-100 rounded-2xl shadow-lg overflow-hidden divide-x divide-gray-200">
-//       {/* 왼쪽 3D 뷰 영역 (70%) */}
-//       <section className="flex-1 basis-[70%]">
-//         <UnityViewer />
-//       </section>
-
-//       {/* 오른쪽 정보 패널 영역 (30%) */}
-//       <section className="basis-[30%] max-w-md bg-slate-50 p-4 flex flex-col space-y-4">
-//         <InfoTabs activeTab={activeTab} onTabChange={setActiveTab} />
-
-//         <SummaryCards
-//           totalSpaces={summaryData.totalSpaces}
-//           availablePrediction={summaryData.availablePrediction}
-//           saturation={summaryData.saturation}
-//         />
-
-//         <div className="flex-1 flex flex-col space-y-4 overflow-y-auto pb-2">
-//           <CongestionBars data={congestionArray} activeTab={activeTab} />
-//           <ZoneLegend />
-//           <FeeCalculator ratePerMinute={80} />
-//         </div>
-//       </section>
-//     </div>
-//   );
-// }
-
-// export default ParkingLayout;

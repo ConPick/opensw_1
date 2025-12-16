@@ -6,17 +6,18 @@ import ParkingLayout from "./ParkingInfoPanel/ParkingLayout";
 function Details() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  const sceneName = params.get("scene"); // GongHak 또는 Ilsong
+  const sceneName = params.get("scene"); // "GongHak" 또는 "IlSong"
 
   return (
     <div className="w-screen h-screen bg-slate-100 overflow-hidden">
-      {/* 전체 화면을 그대로 ParkingLayout에 전달 */}
       <ParkingLayout sceneName={sceneName} />
     </div>
   );
 }
 
 export default Details;
+
+
 
 
 // // src/pages/MainPage/Details/Details.jsx

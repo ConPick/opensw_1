@@ -214,14 +214,14 @@ export default function HomePage() {
 
             {/* 서브텍스트 */}
             <p className="text-sm md:text-base text-gray-200/80 max-w-md">
-              실시간 주차 혼잡도를 한눈에 확인하고, 공대·일송·도헌·CLC
+              주차 혼잡도를 한눈에 확인하고, 공대·일송·도헌·CLC
               주차장의 예상 혼잡 수준을 기반으로 최적의 주차 위치를 안내받으세요.
             </p>
 
             {/* CTA 버튼 영역 */}
             <div className="flex flex-wrap gap-3 pt-2">
               <button
-                onClick={() => window.open("https://hallymparkingdata.streamlit.app/", "_blank")}
+                onClick={() => window.open("http://210.115.227.111:8501", "_blank")}
                 className="px-6 py-3 rounded-full bg-blue-600 text-white text-sm md:text-base font-semibold shadow-lg shadow-blue-600/40 hover:bg-blue-500 transition"
               >
                 한림대 주차 데이터 분석
